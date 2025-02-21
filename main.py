@@ -78,7 +78,7 @@ if __name__ == "__main__":
             proceed = True
             while retries <= max_retries and proceed:
                 print(
-                    f"\n{datetime.now()} : Downloading dataframe {i + 1} / {total_combinations}"
+                    f"\n{datetime.now()} - Downloading dataframe {i + 1} / {total_combinations}"
                     f" ({100 * (i + 1) / total_combinations:.2f}% achieved)"
                 )
                 if i > 0:
@@ -86,12 +86,12 @@ if __name__ == "__main__":
                         (datetime.now() - start_time) * (total_combinations - i) / i
                     )
                     print(
-                        f"{datetime.now()} : Expected remaining time : {time_remaining}"
+                        f"{datetime.now()} - Expected remaining time : {time_remaining}"
                     )
                 print(
-                    f"{datetime.now()} : Nuclear charge : {nuc_charge}\n"
-                    f"{datetime.now()} : Mass density : {10 ** (-rho)} g/cm\u00b3\n"
-                    f"{datetime.now()} : Electron temperature : {temperature} eV"
+                    f"{datetime.now()} - Nuclear charge : {nuc_charge}\n"
+                    f"{datetime.now()} - Mass density : {10 ** (-rho)} g/cm\u00b3\n"
+                    f"{datetime.now()} - Electron temperature : {temperature} eV"
                 )
                 url = build_url(
                     base_url,
@@ -127,8 +127,8 @@ if __name__ == "__main__":
                     full_df = pd.concat([full_df, df])
                     full_df.to_pickle("lanthanide_actinide-opacity-database.pkl")
                     proceed = False
-                    print(f"{datetime.now()} : Dataframe saved")
+                    print(f"{datetime.now()} - Dataframe saved")
                 except Exception as e:
-                    print(f"{datetime.now()} : Server error {e} !")
+                    print(f"{datetime.now()} - Server error {e} !")
                     retries += 1
     full_df.to_csv("lanthanide_actinide-opacity-database.csv")

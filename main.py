@@ -103,7 +103,7 @@ if __name__ == "__main__":
                     opacities,
                 )
                 try:
-                    response = requests.get(url)
+                    response = requests.get(url, timeout=15)
                     soup = BeautifulSoup(response.content, "html.parser")
                     table = soup.find("table")
                     headers = [header.text for header in table.find_all("th")]

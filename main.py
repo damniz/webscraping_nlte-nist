@@ -27,6 +27,7 @@ def build_url(
 
 if __name__ == "__main__":
     start_time = datetime.now()
+    max_retries = 3
     base_url = "https://nlte.nist.gov/cgi-bin/OPAC/osearch.py"
     nuc_charges = list(range(57, 71)) + list(range(89, 103))
     rhos = list(range(4, 21))
@@ -71,54 +72,63 @@ if __name__ == "__main__":
     for i, (nuc_charge, rho, temperature) in enumerate(
         product(nuc_charges, rhos, temperatures)
     ):
+        full_df.sort_index(inplace=True)
         if (nuc_charge, 10 ** (-rho), float(temperature)) not in full_df.index:
-            print(
-                f"\n{datetime.now()} : Downloading dataframe {i + 1} / {total_combinations}"
-            )
-            if i > 0:
-                time_remaining = (
-                    (datetime.now() - start_time) * (total_combinations - i) / i
+            retries = 1
+            proceed = True
+            while retries <= max_retries and proceed:
+                print(
+                    f"\n{datetime.now()} : Downloading dataframe {i + 1} / {total_combinations}"
+                    f" ({100 * (i + 1) / total_combinations:.2f}% achieved)"
                 )
-                print(f"{datetime.now()} : Expected remaining time : {time_remaining}")
-            print(
-                f"{datetime.now()} : Nuclear charge : {nuc_charge}\n"
-                f"{datetime.now()} : Mass density : {10 ** (-rho)} g/cm\u00b3\n"
-                f"{datetime.now()} : Electron temperature : {temperature} eV"
-            )
-            url = build_url(
-                base_url,
-                nuc_charge,
-                rho,
-                temperature,
-                energy_no_1,
-                energy_no_2,
-                opacities,
-            )
-            try:
-                response = requests.get(url)
-                soup = BeautifulSoup(response.content, "html.parser")
-                table = soup.find("table")
-                headers = [header.text for header in table.find_all("th")]
-                rows = []
-                for row in table.find_all("tr")[1:]:
-                    cells = row.find_all("td")
-                    rows.append([cell.text for cell in cells])
-                df = pd.DataFrame(rows, columns=headers)
-                df["nuclear_charge"] = nuc_charge
-                df["mass_density_rho(g/cm3)"] = 10 ** (-rho)
-                df["electron_temperature(eV)"] = temperature
-                df = df.map(pd.to_numeric)
-                df.set_index(
-                    [
-                        "nuclear_charge",
-                        "mass_density_rho(g/cm3)",
-                        "electron_temperature(eV)",
-                    ],
-                    inplace=True,
+                if i > 0:
+                    time_remaining = (
+                        (datetime.now() - start_time) * (total_combinations - i) / i
+                    )
+                    print(
+                        f"{datetime.now()} : Expected remaining time : {time_remaining}"
+                    )
+                print(
+                    f"{datetime.now()} : Nuclear charge : {nuc_charge}\n"
+                    f"{datetime.now()} : Mass density : {10 ** (-rho)} g/cm\u00b3\n"
+                    f"{datetime.now()} : Electron temperature : {temperature} eV"
                 )
-                full_df = pd.concat([full_df, df])
-                full_df.to_pickle("lanthanide_actinide-opacity-database.pkl")
-                print(f"{datetime.now()} : Dataframe saved")
-            except Exception as e:
-                print(f"{datetime.now()} : Server error {e} !")
+                url = build_url(
+                    base_url,
+                    nuc_charge,
+                    rho,
+                    temperature,
+                    energy_no_1,
+                    energy_no_2,
+                    opacities,
+                )
+                try:
+                    response = requests.get(url)
+                    soup = BeautifulSoup(response.content, "html.parser")
+                    table = soup.find("table")
+                    headers = [header.text for header in table.find_all("th")]
+                    rows = []
+                    for row in table.find_all("tr")[1:]:
+                        cells = row.find_all("td")
+                        rows.append([cell.text for cell in cells])
+                    df = pd.DataFrame(rows, columns=headers)
+                    df["nuclear_charge"] = nuc_charge
+                    df["mass_density_rho(g/cm3)"] = 10 ** (-rho)
+                    df["electron_temperature(eV)"] = temperature
+                    df = df.map(pd.to_numeric)
+                    df.set_index(
+                        [
+                            "nuclear_charge",
+                            "mass_density_rho(g/cm3)",
+                            "electron_temperature(eV)",
+                        ],
+                        inplace=True,
+                    )
+                    full_df = pd.concat([full_df, df])
+                    full_df.to_pickle("lanthanide_actinide-opacity-database.pkl")
+                    proceed = False
+                    print(f"{datetime.now()} : Dataframe saved")
+                except Exception as e:
+                    print(f"{datetime.now()} : Server error {e} !")
+                    retries += 1
     full_df.to_csv("lanthanide_actinide-opacity-database.csv")
